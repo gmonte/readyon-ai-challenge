@@ -1,0 +1,29 @@
+type Location {
+  id: ID!
+  name: String!
+  address: String!
+  """When on, a worker's PRESENT request is approved automatically."""
+  selfCheckInEnabled: Boolean!
+  """When off, managers may only decide requests, not mark attendance directly."""
+  managerMarkingEnabled: Boolean!
+  """OFF allowance per worker per year, informational."""
+  offDaysPerYear: Int!
+  workerCount: Int!
+  managerCount: Int!
+}
+
+input SetLocationFeatureFlagsInput {
+  locationId: ID!
+  selfCheckInEnabled: Boolean
+  managerMarkingEnabled: Boolean
+}
+
+extend type Query {
+  """Locations visible to the viewer: all for super admins, memberships otherwise."""
+  locations: [Location!]!
+  location(id: ID!): Location!
+}
+
+extend type Mutation {
+  setLocationFeatureFlags(input: SetLocationFeatureFlagsInput!): Location!
+}

@@ -1,0 +1,141 @@
+enum AttendanceState {
+  PRESENT
+  OFF
+}
+
+enum AttendanceSource {
+  MANAGER
+  INTEGRATION
+  WORKER_REQUEST
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttendanceFilter {
+  ALL
+  PENDING
+  PRESENT
+  OFF
+}
+
+"""Actual attendance of one worker on one date. At most one per worker per date."""
+type AttendanceRecord {
+  id: ID!
+  date: Date!
+  state: AttendanceState!
+  source: AttendanceSource!
+  note: String
+  checkInAt: DateTime
+  checkOutAt: DateTime
+  worker: User!
+  location: Location!
+  """Set when source is MANAGER."""
+  markedBy: User
+  """Set when source is WORKER_REQUEST."""
+  request: AttendanceRequest
+  updatedAt: DateTime!
+}
+
+"""A worker's ask to have a date recorded as PRESENT or OFF. One open request per worker per date."""
+type AttendanceRequest {
+  id: ID!
+  date: Date!
+  type: AttendanceState!
+  status: RequestStatus!
+  note: String
+  checkInAt: DateTime
+  checkOutAt: DateTime
+  worker: User!
+  location: Location!
+  reviewedBy: User
+  reviewedAt: DateTime
+  createdAt: DateTime!
+}
+
+"""One row of the attendance table: a worker and a date, with the record and/or latest request."""
+type AttendanceEntry {
+  id: ID!
+  date: Date!
+  worker: User!
+  jobTitle: String
+  location: Location!
+  """The record's state, or the requested type while no record exists."""
+  state: AttendanceState!
+  """Null while the entry exists only as a request ("on approval")."""
+  source: AttendanceSource
+  record: AttendanceRecord
+  request: AttendanceRequest
+}
+
+type AttendanceCounts {
+  all: Int!
+  pending: Int!
+  present: Int!
+  off: Int!
+}
+
+type AttendanceFeed {
+  entries: [AttendanceEntry!]!
+  """Counts over the unfiltered feed, for the filter chips."""
+  counts: AttendanceCounts!
+}
+
+type OffBalance {
+  year: Int!
+  allowance: Int!
+  used: Int!
+  remaining: Int!
+}
+
+input SubmitAttendanceRequestInput {
+  locationId: ID!
+  date: Date!
+  type: AttendanceState!
+  note: String
+  checkInAt: DateTime
+  checkOutAt: DateTime
+}
+
+input MarkAttendanceInput {
+  locationId: ID!
+  workerId: ID!
+  date: Date!
+  state: AttendanceState!
+  note: String
+  checkInAt: DateTime
+  checkOutAt: DateTime
+}
+
+input IntegrationAttendanceInput {
+  """The worker's external identifier, e.g. RO-1042."""
+  externalId: String!
+  locationId: ID!
+  date: Date!
+  state: AttendanceState!
+  checkInAt: DateTime
+  checkOutAt: DateTime
+}
+
+extend type Query {
+  """Workers get their own entries; managers and admins get everyone at the location."""
+  attendanceFeed(locationId: ID!, filter: AttendanceFilter = ALL): AttendanceFeed!
+  pendingRequestCount(locationId: ID!): Int!
+  """Defaults to the viewer and the current year. Managers may ask about their workers."""
+  offBalance(locationId: ID!, workerId: ID, year: Int): OffBalance!
+}
+
+extend type Mutation {
+  submitAttendanceRequest(input: SubmitAttendanceRequestInput!): AttendanceRequest!
+  cancelAttendanceRequest(id: ID!): AttendanceRequest!
+  approveAttendanceRequest(id: ID!): AttendanceRequest!
+  rejectAttendanceRequest(id: ID!): AttendanceRequest!
+  """Direct marking by a manager; gated by the location's Manager attendance marking flag."""
+  markAttendance(input: MarkAttendanceInput!): AttendanceRecord!
+  """For third-party systems, authenticated with the x-api-key header."""
+  recordIntegrationAttendance(input: IntegrationAttendanceInput!): AttendanceRecord!
+}

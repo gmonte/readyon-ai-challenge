@@ -1,0 +1,33 @@
+enum Role {
+  WORKER
+  MANAGER
+  SUPER_ADMIN
+}
+
+type User {
+  id: ID!
+  name: String!
+  role: Role!
+  """Only workers have one. Third parties identify workers by it."""
+  externalId: String
+  memberships: [Membership!]!
+}
+
+type Membership {
+  location: Location!
+  """Workers only: exactly one job title per location."""
+  jobTitle: String
+}
+
+type LocationWorker {
+  user: User!
+  jobTitle: String
+}
+
+extend type Query {
+  """The signed-in user (simulated auth via cookie), or null."""
+  me: User
+  """One fixed user per role, for the "Viewing as" switcher."""
+  personas: [User!]!
+  locationWorkers(locationId: ID!): [LocationWorker!]!
+}

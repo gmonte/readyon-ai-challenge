@@ -1,0 +1,16 @@
+"""
+Workforce Management gateway. One schema, assembled from the identity, locations and attendance modules.
+"""
+type Query {
+  _health: String!
+}
+
+type Mutation {
+  _noop: Boolean
+}
+
+"""Calendar date, YYYY-MM-DD. All locations share one time zone."""
+scalar Date
+
+"""ISO 8601 timestamp with offset."""
+scalar DateTime
