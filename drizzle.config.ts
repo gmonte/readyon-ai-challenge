@@ -11,5 +11,6 @@ export default defineConfig({
   schema: "./src/server/db/schema.ts",
   out: "./drizzle",
   casing: "snake_case",
-  dbCredentials: { url: process.env.DATABASE_URL ?? "" },
+  // Migrations prefer a direct connection: Neon and other PgBouncer-style poolers are meant for app traffic.
+  dbCredentials: { url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? "" },
 });

@@ -30,6 +30,16 @@ curl http://localhost:3000/api/graphql -H 'content-type: application/json' -H 'x
   -d '{"query":"mutation { recordIntegrationAttendance(input:{externalId:\"RO-1043\", locationId:\"<id>\", date:\"2026-10-07\", state:PRESENT}) { id source } }"}'
 ```
 
+## Deploying (Vercel + Neon)
+
+Set `DATABASE_URL` (and, if your provider offers one, `DATABASE_URL_UNPOOLED`) in the Vercel project. The `vercel-build` script runs `drizzle-kit migrate` before `next build`, so the schema is always current on deploy. Drizzle records applied migrations, so re-running is a no-op.
+
+Seeding is deliberately **not** part of the build: it truncates every table. Run it once by hand against the deployed database:
+
+```bash
+DATABASE_URL='<production url>' pnpm db:seed
+```
+
 ## Layout
 
 ```
