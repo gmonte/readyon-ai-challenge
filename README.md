@@ -1,6 +1,6 @@
 # ReadyOn · Workforce Management
 
-A workforce management system for one company with many locations: workers submit attendance requests, managers decide them and mark attendance, super admins run locations and feature flags. Built for the ReadyOn interview exercise.
+A workforce management system for one company with many locations: workers submit attendance requests, managers decide them and mark attendance, super admins run locations and feature flags. Built for the ReadyOn interview exercise; the full brief and mock-ups are in [REQUIREMENTS.md](./REQUIREMENTS.md).
 
 - **GraphQL gateway** (GraphQL Yoga) served from a Next.js route handler at `/api/graphql`. The frontend talks to nothing else.
 - **PostgreSQL** via Drizzle ORM, with migrations in `drizzle/`.
@@ -44,8 +44,10 @@ src/server/
     locations/            locations and feature flags
     attendance/           records, requests, approvals, balance
   test/                   PGlite harness and fixtures
+REQUIREMENTS.md           The interview brief, verbatim, with mock-ups
 CONTEXT.md                Domain glossary (ubiquitous language)
 docs/adr/                 Architecture decision records
+docs/mockups/             Reference screens from the brief
 ```
 
 Each module owns its tables, Zod schemas, GraphQL SDL and resolvers. Resolvers are one-liners that delegate to services; services take `(db, actor, input)` so they run identically on Postgres and PGlite.
