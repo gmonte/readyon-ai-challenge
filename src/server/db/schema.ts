@@ -45,6 +45,8 @@ export const users = pgTable("users", {
   role: roleEnum().notNull(),
   /** Only workers carry one; third parties identify workers by it. */
   externalId: text().unique(),
+  /** The fixed demo user the "Viewing as" switcher picks for this role. Simulated auth only. */
+  isPersona: boolean().notNull().default(false),
   ...timestamps,
 });
 

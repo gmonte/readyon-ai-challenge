@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/server/db/seed.ts",
     "db:setup": "pnpm db:migrate && pnpm db:seed",
-    "vercel-build": "pnpm db:migrate && next build"
+    "vercel-build": "pnpm db:migrate && pnpm db:seed:if-empty && next build",
+    "db:seed:if-empty": "tsx src/server/db/seed.ts --if-empty"
   },
   "dependencies": {
     "@urql/core": "^6.0.3",

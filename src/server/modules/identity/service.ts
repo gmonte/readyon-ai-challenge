@@ -35,9 +35,9 @@ export async function getMe(db: Db, actor: Actor): Promise<User | null> {
   return row ? UserSchema.parse(row) : null;
 }
 
-/** The "Viewing as" switcher: one fixed user per role, the earliest seeded one. */
+/** The "Viewing as" switcher: the one user per role flagged as the demo persona. */
 export async function listPersonas(db: Db): Promise<User[]> {
-  const rows = await db.select().from(t.users).orderBy(asc(t.users.createdAt), asc(t.users.name));
+  const rows = await db.select().from(t.users).where(eq(t.users.isPersona, true)).orderBy(asc(t.users.name));
   const byRole = new Map<string, User>();
   for (const row of rows) if (!byRole.has(row.role)) byRole.set(row.role, UserSchema.parse(row));
   return ROLES.flatMap((role) => byRole.get(role) ?? []);

@@ -39,8 +39,8 @@ export const anonymousActor: Actor = { kind: "anonymous" };
 /** A location with one worker and one manager, ready for attendance scenarios. */
 export async function seedScenario(db: Db, location: Partial<typeof t.locations.$inferInsert> = {}) {
   const loc = await createLocation(db, location);
-  const worker = await createUser(db, "WORKER", { name: "Tom Reyes", externalId: `RO-${Math.floor(Math.random() * 1e6)}` });
-  const manager = await createUser(db, "MANAGER", { name: "Megan Garcia" });
+  const worker = await createUser(db, "WORKER", { name: "Tom Reyes", externalId: `RO-${Math.floor(Math.random() * 1e6)}`, isPersona: true });
+  const manager = await createUser(db, "MANAGER", { name: "Megan Garcia", isPersona: true });
   await addMembership(db, worker.id, loc.id, "Food server");
   await addMembership(db, manager.id, loc.id);
   return {

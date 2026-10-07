@@ -128,7 +128,7 @@ describe("gateway", () => {
   it("lists one persona per role and scopes locations to memberships", async () => {
     const s = await seedScenario(tdb.db);
     const other = await createUser(tdb.db, "WORKER", { name: "Zed" });
-    await createUser(tdb.db, "SUPER_ADMIN", { name: "Alex Rivera" });
+    await createUser(tdb.db, "SUPER_ADMIN", { name: "Alex Rivera", isPersona: true });
     await addMembership(tdb.db, other.id, s.location.id, "Cook");
     const personas = await gql(`{ personas { role name } }`);
     expect(personas.data).toEqual({

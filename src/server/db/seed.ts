@@ -2,7 +2,7 @@
  * Seeds enough data to demo every workflow. Mirrors the mock-ups: Future Enterprises, three locations,
  * six workers, one manager, one super admin, and attendance around today. Idempotent: wipes and reseeds.
  */
-import { sql } from "drizzle-orm";
+import { count, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as t from "./schema";
@@ -23,6 +23,22 @@ const daysFromToday = (n: number) => {
 };
 const at = (day: Date, hhmm: string) => new Date(`${isoDate(day)}T${hhmm}:00Z`);
 
+/** True when the database already holds data, so a deploy-time seed should leave it alone. */
+export async function hasData(db: Db): Promise<boolean> {
+  const [row] = await db.select({ n: count() }).from(t.users);
+  return (row?.n ?? 0) > 0;
+}
+
+/**
+ * Seed unless data exists. Used by `vercel-build`: bootstraps a fresh database on first deploy and is a
+ * no-op afterwards, so redeploys never wipe demo state.
+ */
+export async function seedIfEmpty(db: Db): Promise<"seeded" | "skipped"> {
+  if (await hasData(db)) return "skipped";
+  await seed(db);
+  return "seeded";
+}
+
 export async function seed(db: Db) {
   await db.execute(
     sql`TRUNCATE TABLE attendance_records, attendance_requests, location_memberships, users, locations CASCADE`,
@@ -37,10 +53,15 @@ export async function seed(db: Db) {
     ])
     .returning();
 
-  // Personas are the first user created per role (see identity/service.ts listPersonas), so insert them first.
-  const [tom] = await db.insert(t.users).values({ name: "Tom Reyes", role: "WORKER", externalId: "RO-1042" }).returning();
-  const [megan] = await db.insert(t.users).values({ name: "Megan Garcia", role: "MANAGER" }).returning();
-  const [alex] = await db.insert(t.users).values({ name: "Alex Rivera", role: "SUPER_ADMIN" }).returning();
+  // One flagged persona per role drives the "Viewing as" switcher.
+  const [tom, megan, alex] = await db
+    .insert(t.users)
+    .values([
+      { name: "Tom Reyes", role: "WORKER", externalId: "RO-1042", isPersona: true },
+      { name: "Megan Garcia", role: "MANAGER", isPersona: true },
+      { name: "Alex Rivera", role: "SUPER_ADMIN", isPersona: true },
+    ])
+    .returning();
   const [lin, meganPark, ari, jamie, priya, dana] = await db
     .insert(t.users)
     .values([
@@ -128,11 +149,19 @@ export async function seed(db: Db) {
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
-  const client = postgres(url, { max: 1 });
+  const onlyIfEmpty = process.argv.includes("--if-empty");
+  const client = postgres(url, { max: 1, prepare: !/-pooler\./.test(url) });
   const db = drizzle({ client, schema: t, casing: "snake_case" });
-  const result = await seed(db);
-  console.log(`Seeded ${result.locations.length} locations. Personas: ${Object.values(result.personas).map((u) => `${u!.name} (${u!.role})`).join(", ")}`);
-  await client.end();
+  try {
+    if (onlyIfEmpty && (await hasData(db))) {
+      console.log("Database already has data; seed skipped (--if-empty).");
+      return;
+    }
+    const result = await seed(db);
+    console.log(`Seeded ${result.locations.length} locations. Personas: ${Object.values(result.personas).map((u) => `${u!.name} (${u!.role})`).join(", ")}`);
+  } finally {
+    await client.end();
+  }
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
